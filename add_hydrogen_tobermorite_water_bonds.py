@@ -1,7 +1,7 @@
 #this script adds hydrogen with central oxygen (Xx) atoms and writes final lammps data file
 # this script adds hydrogen with oxygen atoms
 #input data 'xyz'
-#output is lammps format data
+#output is lammps format data with the bond togology and connectivity
 
 import numpy as np
 import glob
