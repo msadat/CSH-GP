@@ -150,7 +150,7 @@ outFile.write('\n')
 count = 0
 for j in range(0, len(idx), 1):
     count +=1
-    outFile.write('%i %s %i %i %i \n' %(count,'1', len(data1)+j+1, idx[j]+1, len(H_data)/2+j+1))    
+    outFile.write('%i %s %i %i %i \n' %(count,'1', len(data1)+j+1, idx[j]+1, len(data1)+len(H_data)/2+j+1))    
 
 outFile.close()
 print "All done!"   
