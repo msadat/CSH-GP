@@ -1,4 +1,4 @@
-#converting from lammps to xyz for Metakaolinite
+#converting from lammps to xyz for nano particles of CaO or CSH
 #Author M. R. Sadat
 #use this shell command:
 # awk '{gsub("[0-9]*","",$1)}1' Lizardite_555.xyz  > Lizardite_corrected.xyz
@@ -35,7 +35,7 @@ outFile = open('CSH-4nm.xyz', 'w')
 outFile.write('%i \n' %(natoms))
 outFile.write('\n')
 
-#need to transfer the origin to zero, so deduct xmin, ymin and zmin with x, y and z
+#*****need to transfer the origin to zero, so deduct xmin, ymin and zmin with x, y and z
 
 for j in range(size2): #writing atoms without water
     if dataovito2[j]==1:
