@@ -1,134 +1,201 @@
-#this script adds hydrogen with central oxygen (Xx) atoms and writes final lammps data file
-# this script adds hydrogen with oxygen atoms
-#input data 'xyz'
-#output is lammps format data
-
 import numpy as np
 import glob
+import random
 
+def delSiO2 (SiID, Otype):
+    Si_list = [] #list of Si atoms (list of [lists of different Si atoms and their neighbors])
+    Otype_full = []
+    Obridging = [] #list of bridging O with two Si or Al neighbors (i.e. Si-O-Al)
+    ONBO = []
 
-filename = 'Tobermorite_ortho_AMC.xyz' # xyz file 
-flist = glob.glob(filename)
-
-for f in flist:
-    load1 = np.genfromtxt(f, skip_header=2, dtype=float, usecols=(1,2,3)) #dtype=("|S10", float, float, float),
-    data1=np.array(load1)
-
-for f in flist:
-    load2 = np.genfromtxt(f, skip_header=2, dtype=str, usecols=(0)) #dtype=("|S10", float, float, float),
-    data2=np.array(load2)
-
-nXx = 0 #no of water molecules
-idx = [] #id of the water molecules 
-
-for j in range(len(data2)):
-
-  if data2[j] == 'Xx':
-            nXx +=1
-            idx.append(j)
-
-coord = np.zeros((len(idx), 3)) #coordinates for the central Xx atoms
-
-for a in range(len(idx)):
-    coord[a] = data1[idx[a]]
+    #***************Make a list of Si atoms and their neighbors***********************************
     
-    
-#for each point a vector ([180-104]/2 = 38 deg wrt x-axis) will be chosen and one H atoms will be added along that direction at a distance of 1 A.
-#after this another H atom will be added at an angle of 104 degree with the first vector
-
-
-def addatom(d, center):
-    """d = distance to add the atom from central atom,
-    center = array of coordinates for the central Xx atom where hydrogen is to be added"""
-    
-    rot_x = np.pi*180/38 # rotation wrt x axis (38 degree)
-    bx1 = d*np.cos(rot_x)
-    by1 = d*np.sin(rot_x)
-
-    H_array1 = np.zeros((len(center),3)) #array for the coordinates of Hydrogen1
-    H_array2 = np.zeros((len(center),3)) #array for the coordinates of Hydrogen2 
-    
-    for i in range(len(center)):
-        H_array1 [i,0] = center[i,0] + bx1 
-    for j in range(len(center)):  
-        H_array1 [j,1] = center[j,1] + by1
-    for k in range(len(center)):  
-        H_array1 [k,2] = center[k,2] + 0 #no country for old man 'z'
-
-    for i in range(len(center)):
-        H_array2 [i,0] = center[i,0] - bx1 
-    for j in range(len(center)):  
-        H_array2 [j,1] = center[j,1] + by1
-    for k in range(len(center)):  
-        H_array2 [k,2] = center[k,2] + 0 #no country for old man 'z'
+    with open(SiID,  'r') as f:
+     for line in f:
+                
+        words_Si= line.split() # list of each lines
         
-    return np.concatenate((H_array1,H_array2))
-
-H_data = addatom(1, coord) #H_atom array
+        for x in range(len(words_Si)):
+            words_Si[x] = int(words_Si[x])
+        Si_list.append(words_Si)
+    #print len(Si_list)
     
-#*******************write final lammps data with hydrogen added with Ow (Xx)************************
+    #***************Make a list of all oxygens**************************
+    with open(Otype,  'r') as f:    
+      for line in f:
+                
+        words_Otype = line.split() # list of each lines
+      
+        for x in range(len(words_Otype)):
+            words_Otype[x] = int(words_Otype[x]) 
+        Otype_full.append(words_Otype)
+    #***************Make a list of bridging oxygens**************************
 
-xmin = np.min(data1[:,0]) #+min(0.0,xy,xz,xy+xz)
-xmax = np.max(data1[:,0]) #+max(0.0,xy,xz,xy+xz)
+    for i in range(len(Otype_full)):
+        bridgeO = 0
+        
+        for j in range(2,len(Otype_full[i])):
+            if Otype_full[i][j] == 1: 
+              bridgeO +=1
+	    else:
+	      bridgeO = bridgeO
+        if bridgeO == 2:  
+            Obridging.append(Otype_full[i][0])
+            ONBO = ONBO
+        elif bridgeO ==1:
+            Obridging = Obridging  
+            ONBO.append(Otype_full[i][0])
+        else:
+            ONBO = ONBO
+            Obridging = Obridging
+    print "%NBO= " , float(len(ONBO))/float(len(Otype_full))	
+    #**********************Make a list of Si atoms with NBOs*****************
 
-ymin = np.min(data1[:,1]) #+min(0.0,yz)
-ymax = np.max(data1[:,1]) #+max(0.0,yz)
+    Si_NBO = [] #list of Si with NBOs
+    NBO_Si = [] #of list of corresponding NBOs
+    SiNBO_combined_list = [] #combined list of [concateneted list of Si and their NBOs]
+    
+    for i in range(len(Si_list)):
+         SiNBO_list = []
+         for j in range(2,len(Si_list[i])):
+	    #SiNBO_list = []
+            if Si_list[i][j] in ONBO: #check if the O neighbor is in the ONBO list
+                #Si_NBO.append(Si_list[i][0])
+                #NBO_Si.append(Si_list[i][j])
+                #SiNBO_combined_list.append(Si_NBO+NBO_Si) 
+		SiNBO_list.append(Si_list[i][0])
+ 		SiNBO_list.append(Si_list[i][j])
 
-zmin = np.min(data1[:,2])
-zmax = np.max(data1[:,2])
+            else:
+                #Si_NBO = Si_NBO
+                #NBO_Si = NBO_Si
+    
+                SiNBO_list = SiNBO_list
+         SiNBO_combined_list.append(SiNBO_list)
+    
+    print "No. of Si with NBO =" , len(SiNBO_combined_list)
+    #print SiNBO_combined_list
+    #Si_random = np.random.random_integers(1,len(SiNBO_combined_list)) #randomly select a list of Si and its NBO neighbors
+    #print SiNBO_combined_list[Si_random]
+    return SiNBO_combined_list # [Si_random]
+    
+def delAtoms(x,t):
+    """x = array of xyz data file with the atom types,
+    t = list of atoms to be deleted """
+    #np.delete won't work as the new list after deletion has changed row positions
+    idx = []
+    #print "TTT", len(x), len(t)
+    for i in range(len(t)):
+      for j in range(len(x)):
+        if t[i] in x[j]:
+          idx.append(j)
+	  #x = np.delete(x, x[j],0)  #'0' is the axis notation for row, '1' is col
+        else:
+          idx = idx
+    return np.delete(x,idx,0) 
 
-a = 11.26500  
-b = 7.38600   
-c = 44.97000
+if __name__ == "__main__":
 
-natoms = len(data1)+len(H_data)
+    filename = 'data.Tobermorite-ortho_serial' #original lammps datafile
 
-alpha = 90.0 
-beta  = 90.0  
-gamma = 90.0
+    flist = glob.glob(filename)
+    natoms_GBP = 4773
+    target_CS = 1.8
+    for f in flist:
+        #load = np.genfromtxt(f, dtype=float, skip_header=19, skip_footer=natoms_GBP+1, usecols=(0,2,4,5,6))
+        load = np.genfromtxt(f, dtype=float, skip_header=18, usecols=(0,2,4,5,6))
+	data=np.array(load)
+    
+    nSi = 0
+    nCa = 0
+    
+    for j in range(len(data)):
+        if data[j,1] == 1:
+            nSi +=1
+        elif data[j,1] == 2:
+            nCa +=1  
+    #print nSi, nCa     
+    CS = float(nCa)/float(nSi)        
+    print "Initial C/S = " , CS
+    print "Initial No. of Si =", nSi
+    print "Initial No. of Ca =", nCa
+
+    dataSiNBO = delSiO2('Nlist-ID_Si_Al-Tobermorite', 'Nlist-type_O-Tobermorite') #list of Si and their NBOs
+    #print len(dataSiNBO)
+    #print len(dataSiNBO[11])
+    #data = delAtoms(data, dataSiNBO[np.random.random_integers(0,len(dataSiNBO)-1)])
+    #data = delAtoms(data, dataSiNBO[11]) #deletes ith row from the data
+
+    print len(data)
+    natoms = len(data)
+
+    	
+    while CS < target_CS:
+      nSi = 0
+      nCa = 0             
+      #data = delAtoms(data, dataSiNBO[np.random.random_integers(0,len(dataSiNBO)-1)])
+      data = delAtoms(data, dataSiNBO[random.sample(xrange(0,len(dataSiNBO)-1),1)[0]])
+
+      #print len(data)
+      for j in range(len(data)):
+            if data[j,1] == 1:
+                nSi +=1
+            elif data[j,1] == 2:
+                nCa +=1       
+      CS = float(nCa)/float(nSi)  
+      if CS==0:
+	break
+      print "Current C/S= ", CS
+      print "Current No. of Si atoms = ", nSi
+      print "Current No. of Ca atoms = ", nCa
+
+      print "Getting a new C/S..."
+      
+      if CS >= target_CS:
+         print "Desired C/S ratio reached"
+         break
+      
+    print "Finally obtained C/S is = ", CS
+    
+    natoms = len(data)
+    print "Finally remaining atoms = ", natoms
+
+    
+
+    #****************WRITE final data TO LAMMPS DATA FILE**********************************
+
+    outfilename = 'Tobermorite_CS_'+str(target_CS)
+     
+    outFile = open('data.'+outfilename, 'w')
+    outFile.write('LAMMPS data file written using Python script\n')
+    outFile.write('\n')
+    outFile.write('%i %s \n' %(natoms, 'atoms'))
+    outFile.write('4 atom types \n')
+    outFile.write('\n')
+    outFile.write('%f %f %s %s \n' %(0.00, 42.0, 'xlo', 'xhi'))
+    outFile.write('%f %f %s %s \n' %(0.00, 42.0, 'ylo', 'yhi'))
+    outFile.write('%f %f %s %s \n' %(0.00, 42.0, 'zlo', 'zhi'))
+    outFile.write('\n')
+    outFile.write('%s \n' %('Masses'))
+    outFile.write('\n')
+    outFile.write('%i %f \n' %(1, 28.065)) #Si
+    outFile.write('%i %f \n' %(2, 40.078)) #Ca
+    outFile.write('%i %f \n' %(3, 1.0)) #H
+    outFile.write('%i %f \n' %(4, 16.0)) #O
+    outFile.write('\n')
+    outFile.write('Atoms\n')
+    outFile.write('\n')
 
 
-lx=a
-xy = b*np.cos(gamma*np.pi/180)
-ly=np.sqrt(b**2 - xy**2)
-xz = c*np.cos(beta*np.pi/180)
-yz = (b*c*np.cos(alpha*np.pi/180)-xy*xz)/ly
-lz = np.sqrt(c**2 - xz**2 - yz**2)
+    for j in range(len(data)):
+        if data[j,1]==1:
+            outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 1, 0, data[j,2], data[j,3], data[j,4]))
+        elif data[j,1]==2:
+            outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 2, 0, data[j,2], data[j,3], data[j,4]))
+        elif data[j,1]==3:
+            outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 3, 0, data[j,2], data[j,3], data[j,4]))
+        elif data[j,1]==4:
+            outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 4, 0, data[j,2], data[j,3], data[j,4]))
 
-outFile = open('data.Tobermorite_ortho_water', 'w')
-outFile.write('LAMMPS data file written by Rafat Sadat using Python\n')
-outFile.write('\n')
-outFile.write('%i %s \n' %(natoms, 'atoms'))
-outFile.write('6 atom types \n')
-#outFile.write('%i %s \n' %(nbonds, 'bonds'))
-#outFile.write('1 bond types \n')
-#outFile.write('%i %s \n' %(nangles, 'angles'))
-#outFile.write('1 angle types \n')
-outFile.write('\n')
-outFile.write('%f %f %s %s \n' %(0.0, lx, 'xlo', 'xhi'))
-outFile.write('%f %f %s %s \n' %(0.0, ly, 'ylo', 'yhi'))
-outFile.write('%f %f %s %s \n' %(0.0, lz, 'zlo', 'zhi'))
-outFile.write('\n')
-outFile.write('%f %f %f %s %s %s \n' %(xy, xz, yz, 'xy', 'xz', 'yz'))
-outFile.write('\n')
-outFile.write('Atoms\n')
-outFile.write('\n')
-
-
-for j in range(len(data1)): #writing atoms without water
-    if data2[j]=="Si":
-        outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 1, 0, data1[j,0], data1[j,1], data1[j,2]))
-    elif data2[j]=="O":
-        outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 4, 0, data1[j,0], data1[j,1], data1[j,2]))
-    elif data2[j]=="Ca":
-        outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 3, 0, data1[j,0], data1[j,1], data1[j,2]))
-    elif data2[j]=='Xx': #Ow
-        outFile.write('%i %i %i %i %f %f %f \n' %(j+1, 0, 5, 0, data1[j,0], data1[j,1], data1[j,2]))     
-
-
-for j in range(len(H_data)):
-    outFile.write('%i %i %i %i %f %f %f \n' %(len(data1)+j+1, 0, 6, 0, H_data[j,0], H_data[j,1], H_data[j,2]))
-
-outFile.close()
-print "All done!"   
-
+    outFile.close()
+    print "All done!"         
