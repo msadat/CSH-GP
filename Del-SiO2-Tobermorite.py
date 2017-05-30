@@ -1,5 +1,6 @@
 import numpy as np
 import glob
+import random
 
 def delSiO2 (SiID, Otype):
     Si_list = [] #list of Si atoms (list of [lists of different Si atoms and their neighbors])
@@ -98,8 +99,8 @@ if __name__ == "__main__":
     filename = 'data.Tobermorite-ortho_serial' #original lammps datafile
 
     flist = glob.glob(filename)
-    natoms_GBP = 38108
-    target_CS = 2.0
+    natoms_GBP = 4773
+    target_CS = 1.8
     for f in flist:
         #load = np.genfromtxt(f, dtype=float, skip_header=19, skip_footer=natoms_GBP+1, usecols=(0,2,4,5,6))
         load = np.genfromtxt(f, dtype=float, skip_header=18, usecols=(0,2,4,5,6))
@@ -132,14 +133,18 @@ if __name__ == "__main__":
     while CS < target_CS:
       nSi = 0
       nCa = 0             
-      data = delAtoms(data, dataSiNBO[np.random.random_integers(0,len(dataSiNBO)-1)])
+      #data = delAtoms(data, dataSiNBO[np.random.random_integers(0,len(dataSiNBO)-1)])
+      data = delAtoms(data, dataSiNBO[random.sample(xrange(0,len(dataSiNBO)-1),1)[0]])
+
       #print len(data)
       for j in range(len(data)):
             if data[j,1] == 1:
                 nSi +=1
-            elif data[j,1] ==2:
+            elif data[j,1] == 2:
                 nCa +=1       
       CS = float(nCa)/float(nSi)  
+      if CS==0:
+	break
       print "Current C/S= ", CS
       print "Current No. of Si atoms = ", nSi
       print "Current No. of Ca atoms = ", nCa
@@ -167,9 +172,9 @@ if __name__ == "__main__":
     outFile.write('%i %s \n' %(natoms, 'atoms'))
     outFile.write('4 atom types \n')
     outFile.write('\n')
-    outFile.write('%f %f %s %s \n' %(0.00, 82.0, 'xlo', 'xhi'))
-    outFile.write('%f %f %s %s \n' %(0.00, 82.0, 'ylo', 'yhi'))
-    outFile.write('%f %f %s %s \n' %(0.00, 82.0, 'zlo', 'zhi'))
+    outFile.write('%f %f %s %s \n' %(0.00, 42.0, 'xlo', 'xhi'))
+    outFile.write('%f %f %s %s \n' %(0.00, 42.0, 'ylo', 'yhi'))
+    outFile.write('%f %f %s %s \n' %(0.00, 42.0, 'zlo', 'zhi'))
     outFile.write('\n')
     outFile.write('%s \n' %('Masses'))
     outFile.write('\n')
